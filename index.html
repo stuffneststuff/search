@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WikiSearch</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif; margin: 0; padding: 0;
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; background-color: #fff;
+    }
+
+    /* Google-style Homepage */
+    #homeView { margin-top: 20vh; text-align: center; width: 100%; }
+    #homeView h1 { font-size: 80px; margin-bottom: 20px; color: #4285f4; }
+    .search-box {
+      width: 90%; max-width: 584px; margin: 0 auto; padding: 12px 24px;
+      border-radius: 24px; border: 1px solid #dfe1e5; font-size: 16px;
+      outline: none; box-shadow: 0 1px 6px rgba(32,33,36,.28);
+    }
+    .search-box:focus { box-shadow: 0 1px 6px rgba(32,33,36,.4); }
+    .buttons { margin-top: 24px; }
+    .btn {
+      background-color: #f8f9fa; border: 1px solid #f8f9fa; border-radius: 4px;
+      color: #3c4043; font-size: 14px; margin: 11px 4px; padding: 0 16px;
+      line-height: 36px; cursor: pointer;
+    }
+    .btn:hover:not(:disabled) { border: 1px solid #dadce0; box-shadow: 0 1px 1px rgba(0,0,0,.1); }
+    .btn:disabled { background-color: #e0e0e0; cursor: not-allowed; color: #888; }
+
+    /* Results and Add Site Views */
+    #resultsView, #addSiteView {
+      display: none; width: 90%; max-width: 650px; margin-top: 40px; text-align: left;
+    }
+    .result-item { margin-bottom: 30px; display: flex; align-items: flex-start; gap: 15px; }
+    .result-content { flex-grow: 1; }
+    .result-url { color: #202124; font-size: 14px; margin-bottom: 2px; display: block; text-decoration: none; }
+    .result-title { color: #1a0dab; font-size: 20px; text-decoration: none; }
+    .result-title:hover { text-decoration: underline; }
+    .result-tags { color: #4d5156; font-size: 14px; margin-top: 4px; }
+    
+    /* Vote Styling */
+    .vote-box {
+      display: flex; flex-direction: column; align-items: center;
+      background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #dfe1e5;
+      min-width: 50px;
+    }
+    .vote-count { font-size: 18px; font-weight: bold; color: #4285f4; margin-bottom: 4px; }
+    .upvote-btn {
+      background: none; border: none; color: #4285f4; font-size: 20px; cursor: pointer; padding: 0;
+    }
+    .upvote-btn:disabled { color: #ccc; cursor: not-allowed; }
+
+    /* Form styling */
+    .form-group { margin-bottom: 15px; }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .nav-bar {
+      width: 100%; padding: 20px; box-sizing: border-box;
+      border-bottom: 1px solid #ebebeb; display: flex; gap: 20px; align-items: center;
+    }
+    .small-search { width: 300px; padding: 8px 16px; border-radius: 24px; border: 1px solid #dfe1e5; }
+    #loading { display: none; color: #555; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <div id="homeView">
+    <h1>WikiSearch</h1>
+    <input type="text" id="mainSearch" class="search-box" placeholder="Search the web..." onkeypress="handleEnter(event, 'mainSearch')">
+    <div class="buttons">
+      <button class="btn" onclick="performSearch('mainSearch')">Search</button>
+      <button class="btn" onclick="showAddSite()">Add a Website</button>
+    </div>
+    <div id="loading">Loading database...</div>
+  </div>
+
+  <div id="resultsView">
+    <div class="nav-bar">
+      <h2 style="margin:0; color:#4285f4; cursor:pointer;" onclick="goHome()">WikiSearch</h2>
+      <input type="text" id="navSearch" class="small-search" onkeypress="handleEnter(event, 'navSearch')">
+      <button class="btn" style="margin:0;" onclick="performSearch('navSearch')">Search</button>
+      <button class="btn" style="margin:0; margin-left:auto;" onclick="showAddSite()">+ Add Site</button>
+    </div>
+    <div id="resultsContainer" style="margin-top: 30px;"></div>
+  </div>
+
+  <div id="addSiteView">
+    <h2 style="cursor:pointer; color:#4285f4;" onclick="goHome()">WikiSearch</h2>
+    <h3>Can't find it? Add it!</h3>
+    
+    <div class="form-group"><input type="text" id="newTitle" placeholder="Website Title (e.g., Wikipedia)"></div>
+    <div class="form-group"><input type="text" id="newUrl" placeholder="Website URL (e.g., https://wikipedia.org)"></div>
+    <div class="form-group"><input type="text" id="newTags" placeholder="Search Tags (e.g., info, encyclopedia)"></div>
+    
+    <button class="btn" onclick="submitNewSite()" style="background-color: #4285f4; color: white;">Submit Website</button>
+    <button class="btn" onclick="goHome()">Cancel</button>
+  </div>
+
+  <script>
+    // --- IMPORTANT: PASTE YOUR NEW GOOGLE APPS SCRIPT WEB APP URL HERE ---
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwN0rncxt1Q1g8sNoc0kT1DpdwqyZ2BSnMObAWdHFgM8uszh2S2kTprVNew96apJCJYsg/exec"; 
+    
+    let database = [];
+
+    // Pressing enter triggers search
+    function handleEnter(event, inputId) {
+      if (event.key === 'Enter') performSearch(inputId);
+    }
+
+    // Switch between views
+    function showView(viewId) {
+      document.getElementById('homeView').style.display = 'none';
+      document.getElementById('resultsView').style.display = 'none';
+      document.getElementById('addSiteView').style.display = 'none';
+      document.getElementById(viewId).style.display = 'block';
+    }
+
+    function goHome() {
+      showView('homeView');
+      document.getElementById('mainSearch').value = '';
+    }
+
+    function showAddSite() { showView('addSiteView'); }
+
+    // Fetch data and search
+    async function performSearch(inputId) {
+      const query = document.getElementById(inputId).value.toLowerCase().trim();
+      if (!query) return;
+
+      document.getElementById('navSearch').value = query; // Sync the nav bar search box
+      
+      if (database.length === 0) {
+        document.getElementById('loading').style.display = 'block';
+        try {
+          const response = await fetch(SCRIPT_URL);
+          database = await response.json();
+        } catch (error) {
+          alert("Error connecting to database. Check your Web App URL.");
+          document.getElementById('loading').style.display = 'none';
+          return;
+        }
+        document.getElementById('loading').style.display = 'none';
+      }
+
+      // Filter by title or tags
+      let results = database.filter(site => {
+        return site.title.toLowerCase().includes(query) || site.tags.toLowerCase().includes(query);
+      });
+
+      // --- NEW: Sort results by votes (Highest to lowest) ---
+      results.sort((a, b) => b.votes - a.votes);
+
+      const resultsContainer = document.getElementById('resultsContainer');
+      resultsContainer.innerHTML = ''; 
+
+      if (results.length > 0) {
+        showView('resultsView');
+        
+        // Get the user's history of voted sites from their browser
+        let votedSites = JSON.parse(localStorage.getItem('votedSites') || '[]');
+
+        results.forEach((site, index) => {
+          // Check if this user already voted for this site
+          const hasVoted = votedSites.includes(site.url);
+          const buttonDisabled = hasVoted ? "disabled" : "";
+          const buttonColor = hasVoted ? "gray" : "#4285f4";
+
+          resultsContainer.innerHTML += `
+            <div class="result-item">
+              <div class="vote-box">
+                <button class="upvote-btn" id="btn-${index}" ${buttonDisabled} onclick="upvoteSite('${site.url}', ${index})">▲</button>
+                <div class="vote-count" id="votes-${index}">${site.votes}</div>
+              </div>
+              <div class="result-content">
+                <a href="${site.url}" class="result-url" target="_blank">${site.url}</a>
+                <a href="${site.url}" class="result-title" target="_blank">${site.title}</a>
+                <div class="result-tags">Tags: ${site.tags}</div>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        showView('addSiteView');
+        document.getElementById('newTags').value = query; // Auto-fill
+      }
+    }
+
+    // --- NEW: Handle Upvoting ---
+    function upvoteSite(url, elementIndex) {
+      // 1. Save to local storage so they can't vote again
+      let votedSites = JSON.parse(localStorage.getItem('votedSites') || '[]');
+      if (votedSites.includes(url)) return; // Double-check to prevent spam
+      
+      votedSites.push(url);
+      localStorage.setItem('votedSites', JSON.stringify(votedSites));
+
+      // 2. Update the screen immediately for the user
+      const voteCountEl = document.getElementById(`votes-${elementIndex}`);
+      const btnEl = document.getElementById(`btn-${elementIndex}`);
+      
+      let currentVotes = parseInt(voteCountEl.innerText);
+      voteCountEl.innerText = currentVotes + 1;
+      btnEl.disabled = true;
+
+      // 3. Update our local javascript database array
+      let siteInDb = database.find(s => s.url === url);
+      if(siteInDb) siteInDb.votes += 1;
+
+      // 4. Send the upvote to Google Sheets in the background
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'upvote', url: url })
+      });
+    }
+
+    // Submit a new site
+    function submitNewSite() {
+      const title = document.getElementById('newTitle').value;
+      const url = document.getElementById('newUrl').value;
+      const tags = document.getElementById('newTags').value;
+
+      if (!title || !url) {
+        alert("Please enter at least a title and URL.");
+        return;
+      }
+
+      // Notice we added action: 'add' so the Apps Script knows what to do
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add', title: title, url: url, tags: tags })
+      }).then(() => {
+        alert("Site added!");
+        database.push({ title: title, url: url, tags: tags, votes: 0 }); // Add locally too
+        goHome();
+        document.getElementById('newTitle').value = '';
+        document.getElementById('newUrl').value = '';
+        document.getElementById('newTags').value = '';
+      }).catch(error => { alert("Error adding site."); });
+    }
+  </script>
+</body>
+</html>
