@@ -4,114 +4,156 @@
   <meta charset="UTF-8">
   <title>WikiSearch</title>
   <style>
+    /* Improved Modern UI Styling */
     body {
-      font-family: Arial, sans-serif; margin: 0; padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0; padding: 0;
       display: flex; flex-direction: column; align-items: center;
-      min-height: 100vh; background-color: #fff;
+      min-height: 100vh; background-color: #f8f9fa; color: #202124;
     }
 
-    /* Google-style Homepage */
+    /* Views */
     #homeView { margin-top: 20vh; text-align: center; width: 100%; }
-    #homeView h1 { font-size: 80px; margin-bottom: 20px; color: #4285f4; }
+    #homeView h1 { font-size: 72px; margin-bottom: 30px; color: #4285f4; font-weight: bold; letter-spacing: -2px;}
+    
     .search-box {
-      width: 90%; max-width: 584px; margin: 0 auto; padding: 12px 24px;
-      border-radius: 24px; border: 1px solid #dfe1e5; font-size: 16px;
-      outline: none; box-shadow: 0 1px 6px rgba(32,33,36,.28);
+      width: 90%; max-width: 600px; margin: 0 auto; padding: 14px 24px;
+      border-radius: 30px; border: 1px solid #dfe1e5; font-size: 16px;
+      outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      transition: box-shadow 0.2s ease;
     }
-    .search-box:focus { box-shadow: 0 1px 6px rgba(32,33,36,.4); }
+    .search-box:focus { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    
     .buttons { margin-top: 24px; }
     .btn {
-      background-color: #f8f9fa; border: 1px solid #f8f9fa; border-radius: 4px;
-      color: #3c4043; font-size: 14px; margin: 11px 4px; padding: 0 16px;
-      line-height: 36px; cursor: pointer;
+      background-color: #fff; border: 1px solid #dadce0; border-radius: 6px;
+      color: #3c4043; font-size: 14px; margin: 8px 6px; padding: 8px 20px;
+      cursor: pointer; transition: background-color 0.2s, box-shadow 0.2s;
+      font-weight: 500;
     }
-    .btn:hover:not(:disabled) { border: 1px solid #dadce0; box-shadow: 0 1px 1px rgba(0,0,0,.1); }
-    .btn:disabled { background-color: #e0e0e0; cursor: not-allowed; color: #888; }
+    .btn:hover:not(:disabled) { background-color: #f1f3f4; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .btn.primary { background-color: #4285f4; color: white; border: none; }
+    .btn.primary:hover:not(:disabled) { background-color: #3367d6; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* Results and Add Site Views */
-    #resultsView, #addSiteView {
-      display: none; width: 90%; max-width: 650px; margin-top: 40px; text-align: left;
+    /* Forms */
+    .form-container {
+      display: none; width: 90%; max-width: 500px; margin-top: 60px;
+      background: white; padding: 30px; border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: left;
     }
-    .result-item { margin-bottom: 30px; display: flex; align-items: flex-start; gap: 15px; }
-    .result-content { flex-grow: 1; }
-    .result-url { color: #202124; font-size: 14px; margin-bottom: 2px; display: block; text-decoration: none; }
-    .result-title { color: #1a0dab; font-size: 20px; text-decoration: none; }
-    .result-title:hover { text-decoration: underline; }
-    .result-tags { color: #4d5156; font-size: 14px; margin-top: 4px; }
+    .form-container h2 { margin-top: 0; color: #4285f4; cursor: pointer; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; }
+    .form-group input { 
+      width: 100%; padding: 12px; border: 1px solid #ccc; 
+      border-radius: 6px; box-sizing: border-box; font-size: 14px;
+    }
+
+    /* Results */
+    #resultsView { display: none; width: 100%; max-width: 800px; margin-top: 20px; text-align: left; padding: 0 20px; box-sizing: border-box;}
     
-    /* Vote Styling */
-    .vote-box {
-      display: flex; flex-direction: column; align-items: center;
-      background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #dfe1e5;
-      min-width: 50px;
-    }
-    .vote-count { font-size: 18px; font-weight: bold; color: #4285f4; margin-bottom: 4px; }
-    .upvote-btn {
-      background: none; border: none; color: #4285f4; font-size: 20px; cursor: pointer; padding: 0;
-    }
-    .upvote-btn:disabled { color: #ccc; cursor: not-allowed; }
-
-    /* Form styling */
-    .form-group { margin-bottom: 15px; }
-    .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
     .nav-bar {
       width: 100%; padding: 20px; box-sizing: border-box;
       border-bottom: 1px solid #ebebeb; display: flex; gap: 20px; align-items: center;
+      background: white; position: sticky; top: 0; z-index: 100;
     }
-    .small-search { width: 300px; padding: 8px 16px; border-radius: 24px; border: 1px solid #dfe1e5; }
-    #loading { display: none; color: #555; margin-top: 20px; }
+    .nav-bar h2 { margin: 0; color: #4285f4; cursor: pointer; font-size: 24px;}
+    .small-search { width: 100%; max-width: 400px; padding: 10px 18px; border-radius: 24px; border: 1px solid #dfe1e5; outline: none;}
+
+    .result-item { 
+      margin-bottom: 25px; display: flex; align-items: center; gap: 15px; 
+      background: white; padding: 15px; border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f1f3f4;
+    }
+    .result-icon {
+      width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
+      background-color: #e8eaed; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: bold; color: #5f6368; flex-shrink: 0;
+    }
+    .result-content { flex-grow: 1; min-width: 0; }
+    .result-url { color: #5f6368; font-size: 13px; margin-bottom: 4px; display: block; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .result-title { color: #1a0dab; font-size: 18px; text-decoration: none; font-weight: 500; display: block;}
+    .result-title:hover { text-decoration: underline; }
+    .result-tags { color: #70757a; font-size: 13px; margin-top: 6px; }
+    
+    /* Actions & Votes */
+    .action-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    .vote-box {
+      display: flex; align-items: center; background: #f8f9fa; padding: 4px 10px; 
+      border-radius: 20px; border: 1px solid #dfe1e5; gap: 6px;
+    }
+    .vote-count { font-size: 14px; font-weight: bold; color: #202124; }
+    .upvote-btn { background: none; border: none; color: #4285f4; font-size: 16px; cursor: pointer; padding: 0; }
+    .upvote-btn:disabled { color: #ccc; cursor: not-allowed; }
+    .edit-btn { font-size: 12px; color: #70757a; background: none; border: 1px solid #dadce0; border-radius: 4px; padding: 4px 8px; cursor: pointer;}
+    .edit-btn:hover { background: #f1f3f4; }
+
+    #loading { display: none; color: #70757a; margin-top: 20px; font-size: 14px; }
   </style>
 </head>
 <body>
 
   <div id="homeView">
     <h1>WikiSearch</h1>
-    <input type="text" id="mainSearch" class="search-box" placeholder="Search the web..." onkeypress="handleEnter(event, 'mainSearch')">
+    <input type="text" id="mainSearch" class="search-box" placeholder="Search for websites, tags, or topics..." onkeypress="handleEnter(event, 'mainSearch')">
     <div class="buttons">
       <button class="btn" onclick="performSearch('mainSearch')">Search</button>
-      <button class="btn" onclick="showAddSite()">Add a Website</button>
+      <button class="btn" onclick="showForm('addSiteView')">Add a Website</button>
     </div>
-    <div id="loading">Loading database...</div>
+    <div id="loading">Loading database from Google Sheets...</div>
   </div>
 
   <div id="resultsView">
     <div class="nav-bar">
-      <h2 style="margin:0; color:#4285f4; cursor:pointer;" onclick="goHome()">WikiSearch</h2>
+      <h2 onclick="goHome()">WikiSearch</h2>
       <input type="text" id="navSearch" class="small-search" onkeypress="handleEnter(event, 'navSearch')">
-      <button class="btn" style="margin:0;" onclick="performSearch('navSearch')">Search</button>
-      <button class="btn" style="margin:0; margin-left:auto;" onclick="showAddSite()">+ Add Site</button>
+      <button class="btn primary" style="margin:0;" onclick="performSearch('navSearch')">Search</button>
+      <button class="btn" style="margin:0; margin-left:auto;" onclick="showForm('addSiteView')">+ Add Site</button>
     </div>
     <div id="resultsContainer" style="margin-top: 30px;"></div>
   </div>
 
-  <div id="addSiteView">
-    <h2 style="cursor:pointer; color:#4285f4;" onclick="goHome()">WikiSearch</h2>
-    <h3>Can't find it? Add it!</h3>
+  <div id="formView" class="form-container">
+    <h2 onclick="goHome()">WikiSearch</h2>
+    <h3 id="formTitle">Add a New Website</h3>
+    <p id="formDesc">Help build the engine by adding a useful site.</p>
     
-    <div class="form-group"><input type="text" id="newTitle" placeholder="Website Title (e.g., Wikipedia)"></div>
-    <div class="form-group"><input type="text" id="newUrl" placeholder="Website URL (e.g., https://wikipedia.org)"></div>
-    <div class="form-group"><input type="text" id="newTags" placeholder="Search Tags (e.g., info, encyclopedia)"></div>
+    <div class="form-group">
+      <label>Website URL (Cannot be changed later)</label>
+      <input type="text" id="formUrl" placeholder="https://example.com">
+    </div>
+    <div class="form-group">
+      <label>Website Title</label>
+      <input type="text" id="formTitleInput" placeholder="Example Site">
+    </div>
+    <div class="form-group">
+      <label>Search Tags (Comma separated)</label>
+      <input type="text" id="formTags" placeholder="info, tutorial, learning">
+    </div>
+    <div class="form-group">
+      <label>Icon URL (Optional)</label>
+      <input type="text" id="formIcon" placeholder="https://example.com/logo.png">
+    </div>
     
-    <button class="btn" onclick="submitNewSite()" style="background-color: #4285f4; color: white;">Submit Website</button>
+    <input type="hidden" id="formMode" value="add"> <button class="btn primary" onclick="submitForm()">Save Website</button>
     <button class="btn" onclick="goHome()">Cancel</button>
   </div>
 
   <script>
     // --- IMPORTANT: PASTE YOUR NEW GOOGLE APPS SCRIPT WEB APP URL HERE ---
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwN0rncxt1Q1g8sNoc0kT1DpdwqyZ2BSnMObAWdHFgM8uszh2S2kTprVNew96apJCJYsg/exec"; 
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzYeYQvo-1WGgBkg5A7kMd6WMIUbFMBYBnx42mHJ7wUtPk46tQosIso377Q3TLIdTRPA/exec"; 
     
     let database = [];
 
-    // Pressing enter triggers search
     function handleEnter(event, inputId) {
       if (event.key === 'Enter') performSearch(inputId);
     }
 
-    // Switch between views
     function showView(viewId) {
       document.getElementById('homeView').style.display = 'none';
       document.getElementById('resultsView').style.display = 'none';
-      document.getElementById('addSiteView').style.display = 'none';
+      document.getElementById('formView').style.display = 'none';
       document.getElementById(viewId).style.display = 'block';
     }
 
@@ -120,14 +162,41 @@
       document.getElementById('mainSearch').value = '';
     }
 
-    function showAddSite() { showView('addSiteView'); }
+    // Opens the form for ADDING
+    function showForm() {
+      document.getElementById('formTitle').innerText = "Add a New Website";
+      document.getElementById('formDesc').innerText = "Help build the engine by adding a useful site.";
+      document.getElementById('formUrl').value = '';
+      document.getElementById('formUrl').disabled = false; // Allow typing URL
+      document.getElementById('formTitleInput').value = '';
+      document.getElementById('formTags').value = '';
+      document.getElementById('formIcon').value = '';
+      document.getElementById('formMode').value = 'add';
+      showView('formView');
+    }
 
-    // Fetch data and search
+    // Opens the form for EDITING
+    function openEdit(url) {
+      const site = database.find(s => s.url === url);
+      if(!site) return;
+
+      document.getElementById('formTitle').innerText = "Edit Website";
+      document.getElementById('formDesc').innerText = "Update tags, change the title, or add an icon.";
+      document.getElementById('formUrl').value = site.url;
+      document.getElementById('formUrl').disabled = true; // Lock URL so they can't change the main link
+      document.getElementById('formTitleInput').value = site.title;
+      document.getElementById('formTags').value = site.tags;
+      document.getElementById('formIcon').value = site.icon || '';
+      document.getElementById('formMode').value = 'edit';
+      
+      showView('formView');
+    }
+
     async function performSearch(inputId) {
       const query = document.getElementById(inputId).value.toLowerCase().trim();
       if (!query) return;
 
-      document.getElementById('navSearch').value = query; // Sync the nav bar search box
+      document.getElementById('navSearch').value = query; 
       
       if (database.length === 0) {
         document.getElementById('loading').style.display = 'block';
@@ -142,12 +211,10 @@
         document.getElementById('loading').style.display = 'none';
       }
 
-      // Filter by title or tags
       let results = database.filter(site => {
         return site.title.toLowerCase().includes(query) || site.tags.toLowerCase().includes(query);
       });
 
-      // --- NEW: Sort results by votes (Highest to lowest) ---
       results.sort((a, b) => b.votes - a.votes);
 
       const resultsContainer = document.getElementById('resultsContainer');
@@ -155,91 +222,103 @@
 
       if (results.length > 0) {
         showView('resultsView');
-        
-        // Get the user's history of voted sites from their browser
         let votedSites = JSON.parse(localStorage.getItem('votedSites') || '[]');
 
         results.forEach((site, index) => {
-          // Check if this user already voted for this site
           const hasVoted = votedSites.includes(site.url);
           const buttonDisabled = hasVoted ? "disabled" : "";
-          const buttonColor = hasVoted ? "gray" : "#4285f4";
+          
+          // Check if icon exists, otherwise use a placeholder letter
+          const iconHtml = site.icon 
+            ? `<img src="${site.icon}" class="result-icon" onerror="this.style.display='none'">` 
+            : `<div class="result-icon">${site.title.charAt(0).toUpperCase()}</div>`;
 
           resultsContainer.innerHTML += `
             <div class="result-item">
-              <div class="vote-box">
-                <button class="upvote-btn" id="btn-${index}" ${buttonDisabled} onclick="upvoteSite('${site.url}', ${index})">▲</button>
-                <div class="vote-count" id="votes-${index}">${site.votes}</div>
-              </div>
+              ${iconHtml}
               <div class="result-content">
                 <a href="${site.url}" class="result-url" target="_blank">${site.url}</a>
                 <a href="${site.url}" class="result-title" target="_blank">${site.title}</a>
                 <div class="result-tags">Tags: ${site.tags}</div>
               </div>
+              <div class="action-panel">
+                <div class="vote-box">
+                  <button class="upvote-btn" id="btn-${index}" ${buttonDisabled} onclick="upvoteSite('${site.url}', ${index})">▲</button>
+                  <span class="vote-count" id="votes-${index}">${site.votes}</span>
+                </div>
+                <button class="edit-btn" onclick="openEdit('${site.url}')">Edit Info</button>
+              </div>
             </div>
           `;
         });
       } else {
-        showView('addSiteView');
-        document.getElementById('newTags').value = query; // Auto-fill
+        showForm();
+        document.getElementById('formTags').value = query; // Auto-fill tags if nothing found
       }
     }
 
-    // --- NEW: Handle Upvoting ---
     function upvoteSite(url, elementIndex) {
-      // 1. Save to local storage so they can't vote again
       let votedSites = JSON.parse(localStorage.getItem('votedSites') || '[]');
-      if (votedSites.includes(url)) return; // Double-check to prevent spam
+      if (votedSites.includes(url)) return; 
       
       votedSites.push(url);
       localStorage.setItem('votedSites', JSON.stringify(votedSites));
 
-      // 2. Update the screen immediately for the user
-      const voteCountEl = document.getElementById(`votes-${elementIndex}`);
-      const btnEl = document.getElementById(`btn-${elementIndex}`);
-      
-      let currentVotes = parseInt(voteCountEl.innerText);
-      voteCountEl.innerText = currentVotes + 1;
-      btnEl.disabled = true;
+      document.getElementById(`votes-${elementIndex}`).innerText = parseInt(document.getElementById(`votes-${elementIndex}`).innerText) + 1;
+      document.getElementById(`btn-${elementIndex}`).disabled = true;
 
-      // 3. Update our local javascript database array
       let siteInDb = database.find(s => s.url === url);
       if(siteInDb) siteInDb.votes += 1;
 
-      // 4. Send the upvote to Google Sheets in the background
       fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
+        method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'upvote', url: url })
       });
     }
 
-    // Submit a new site
-    function submitNewSite() {
-      const title = document.getElementById('newTitle').value;
-      const url = document.getElementById('newUrl').value;
-      const tags = document.getElementById('newTags').value;
+    // Handles both Adding and Editing based on the hidden #formMode input
+    function submitForm() {
+      const mode = document.getElementById('formMode').value;
+      const url = document.getElementById('formUrl').value;
+      const title = document.getElementById('formTitleInput').value;
+      const tags = document.getElementById('formTags').value;
+      const icon = document.getElementById('formIcon').value;
 
       if (!title || !url) {
         alert("Please enter at least a title and URL.");
         return;
       }
 
-      // Notice we added action: 'add' so the Apps Script knows what to do
       fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
+        method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'add', title: title, url: url, tags: tags })
+        body: JSON.stringify({ action: mode, title: title, url: url, tags: tags, icon: icon })
       }).then(() => {
-        alert("Site added!");
-        database.push({ title: title, url: url, tags: tags, votes: 0 }); // Add locally too
-        goHome();
-        document.getElementById('newTitle').value = '';
-        document.getElementById('newUrl').value = '';
-        document.getElementById('newTags').value = '';
-      }).catch(error => { alert("Error adding site."); });
+        
+        if (mode === 'add') {
+          alert("Site added!");
+          database.push({ title: title, url: url, tags: tags, icon: icon, votes: 0 });
+        } else {
+          alert("Site updated!");
+          // Update our local array so the user sees changes immediately without refreshing
+          let siteInDb = database.find(s => s.url === url);
+          if(siteInDb) {
+            siteInDb.title = title;
+            siteInDb.tags = tags;
+            siteInDb.icon = icon;
+          }
+        }
+        
+        // If they were looking at results, refresh the results. Otherwise go home.
+        const currentSearch = document.getElementById('navSearch').value;
+        if (currentSearch) {
+          performSearch('navSearch');
+        } else {
+          goHome();
+        }
+        
+      }).catch(error => { alert("Error connecting to server."); });
     }
   </script>
 </body>
